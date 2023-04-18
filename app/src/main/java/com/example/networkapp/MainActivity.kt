@@ -1,5 +1,6 @@
 package com.example.networkapp
 
+import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
@@ -14,9 +15,11 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.squareup.picasso.Picasso
 import org.json.JSONObject
+import java.io.*
 
 
 class MainActivity : AppCompatActivity() {
+
 
     private lateinit var requestQueue: RequestQueue
     lateinit var titleTextView: TextView
@@ -25,9 +28,16 @@ class MainActivity : AppCompatActivity() {
     lateinit var showButton: Button
     lateinit var comicImageView: ImageView
 
+
+
+    private val internalFilename = "my_file"
+    private lateinit var file: File
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        file = File(filesDir, internalFilename)
 
         requestQueue = Volley.newRequestQueue(this)
 
@@ -37,16 +47,43 @@ class MainActivity : AppCompatActivity() {
         showButton = findViewById<Button>(R.id.showComicButton)
         comicImageView = findViewById<ImageView>(R.id.comicImageView)
 
+        if (file.exists()) {
+            try {
+                val br = BufferedReader(FileReader(file))
+                val text = StringBuilder()
+                var line: String?
+                while (br.readLine().also { line = it } != null) {
+                    text.append(line)
+                }
+                br.close()
+                showComic(JSONObject(text.toString()))
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+
         showButton.setOnClickListener {
             downloadComic(numberEditText.text.toString())
         }
 
     }
+    override fun onStop() {
+        super.onStop()
+        // Save whenever activity goes to the background
+    }
 
     private fun downloadComic (comicId: String) {
         val url = "https://xkcd.com/$comicId/info.0.json"
         requestQueue.add (
-            JsonObjectRequest(url, {showComic(it)}, {
+            JsonObjectRequest(url, {showComic(it)
+                try {
+                    val outputStream = FileOutputStream(file)
+                    outputStream.write(it.toString().toByteArray())
+                    outputStream.close()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }}, {
             })
         )
     }
@@ -56,6 +93,8 @@ class MainActivity : AppCompatActivity() {
         descriptionTextView.text = comicObject.getString("alt")
         Picasso.get().load(comicObject.getString("img")).into(comicImageView)
     }
+
+
 
 
 }
