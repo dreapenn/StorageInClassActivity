@@ -1,8 +1,13 @@
 package com.example.networkapp
 
+import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.Settings
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
@@ -33,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     private val internalFilename = "my_file"
     private lateinit var file: File
 
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -65,6 +71,19 @@ class MainActivity : AppCompatActivity() {
 
         showButton.setOnClickListener {
             downloadComic(numberEditText.text.toString())
+        }
+
+        if(intent?.action == Intent.ACTION_VIEW){
+            intent.data?.path?.run{
+                downloadComic(split("/", this)[1])
+            }
+        }
+        findViewById<Button>(R.id.button).setOnClickListener{
+            val intent = Intent(
+                Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS,
+                Uri.parse("package:${packageName}"))
+            startActivity(intent)
+
         }
 
     }
